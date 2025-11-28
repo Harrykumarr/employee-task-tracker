@@ -1,20 +1,8 @@
 import { GalleryVerticalEnd } from "lucide-react"
 
 import { LoginForm } from "@/components/login-form"
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "./api/auth/[...nextauth]/route";
 
 export default async function LoginPage() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.email) {
-      redirect("/dashboard");
-    }
-  } catch (error) {
-    // Continue to login page if session check fails
-  }
-
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
