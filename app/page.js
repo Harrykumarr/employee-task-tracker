@@ -8,11 +8,11 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 export default async function LoginPage() {
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user) {
+    if (session?.user?.email) {
       redirect("/dashboard");
     }
   } catch (error) {
-    console.log("Session check error:", error);
+    // Continue to login page if session check fails
   }
 
   return (

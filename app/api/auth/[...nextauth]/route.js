@@ -13,33 +13,50 @@ export const authOptions = {
       async authorize(credentials) {
         const { email, password } = credentials;
 
+        // Validate input
+        if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+          return null;
+        }
+
+        // Sanitize email
+        const sanitizedEmail = email.trim().toLowerCase().slice(0, 255);
+
         try {
           await connectToDatabase();
           // Use the static method to get user with password
-          const user = await User.findByEmailWithPassword(email);
+          const user = await User.findByEmailWithPassword(sanitizedEmail);
 
           if (!user) {
-            console.log("No user found with email:", email);
+            // Don't expose whether user exists or not - security best practice
+            if (process.env.NODE_ENV === 'development') {
+              console.log("Authentication failed: Invalid credentials");
+            }
             return null;
           }
 
           const passwordsMatch = await bcrypt.compare(password, user.password);
 
           if (!passwordsMatch) {
-            console.log("Password mismatch for user:", email);
+            // Don't expose whether password is wrong or user doesn't exist
+            if (process.env.NODE_ENV === 'development') {
+              console.log("Authentication failed: Invalid credentials");
+            }
             return null;
           }
 
-          console.log("✅ Authentication successful for:", email);
+          if (process.env.NODE_ENV === 'development') {
+            console.log("✅ Authentication successful");
+          }
           // Return user without password for session
           return {
             id: user._id,
             name: user.name,
             email: user.email,
-            role: user.role,
           };
         } catch (error) {
-          console.log("❌ NextAuth authorize error:", error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error("❌ NextAuth authorize error:", error.message);
+          }
           return null;
         }
       },
@@ -47,38 +64,23 @@ export const authOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
-  },
-  jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/",
-    signOut: "/",
-    error: "/",
+    signIn: "/api/auth/signin",
   },
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      // Prevent redirects to external domains
-      if (url.startsWith("/")) return url;
-      if (url.startsWith(baseUrl)) return url;
-      return baseUrl;
-    },
     async jwt({ token, user }) {
-      // Include user ID and role in token
+      // Include user ID in token
       if (user) {
         token.id = user.id;
-        token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
-      // Include user ID and role in session
+      // Include user ID in session
       if (token) {
         session.user.id = token.id;
-        session.user.role = token.role;
       }
       return session;
     },
