@@ -48,6 +48,10 @@ export const authOptions = {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
@@ -56,6 +60,12 @@ export const authOptions = {
     error: "/",
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Prevent redirects to external domains
+      if (url.startsWith("/")) return url;
+      if (url.startsWith(baseUrl)) return url;
+      return baseUrl;
+    },
     async jwt({ token, user }) {
       // Include user ID and role in token
       if (user) {
